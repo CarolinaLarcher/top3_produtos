@@ -5,6 +5,6 @@ requests
 pillow
 google-api-python-client
 fpdf
-google-generative-ai
+google-generativeai
 streamlit
 
