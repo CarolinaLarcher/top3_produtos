@@ -1,3 +1,4 @@
+seleniumbase
 selenium
 webdriver-manager
 pandas
