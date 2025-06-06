@@ -32,11 +32,13 @@ if st.button("Buscar", key="busca"):
     else:
         st.warning("Por favor, digite algo para buscar.")
 
+driver_path = "./drivers/geckodriver"
+os.chmod(driver_path, 0o755)
 
 options = Options()
 options.headless = True
 
-service = Service(executable_path="/usr/bin/geckodriver")
+service = Service(executable_path=driver_path)
 
 #############################BLOCO PELANDO#################################################################################
 @st.cache_data(show_spinner="Buscando ofertas no Pelando...")
