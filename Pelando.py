@@ -1,7 +1,4 @@
-from selenium.webdriver.common.by import By
 from webdriver_manager.firefox import GeckoDriverManager
-from selenium.webdriver.firefox.service import Service
-from selenium.webdriver import FirefoxOptions
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -35,21 +32,17 @@ if st.button("Buscar", key="busca"):
     else:
         st.warning("Por favor, digite algo para buscar.")
 
-@st.experimental_singleton
-def install_geckodriver():
-    os.system('sbase install geckodriver')
-    os.system('ln -s /home/appuser/venv/lib/python3.13/site-packages/seleniumbase/drivers/geckodriver /home/appuser/venv/bin/geckodriver')
 
-install_geckodriver()
+options = Options()
+options.headless = True
 
-options = FirefoxOptions()
-options.add_argument("--headless")
+service = Service(executable_path="/usr/bin/geckodriver")
 
 #############################BLOCO PELANDO#################################################################################
 @st.cache_data(show_spinner="Buscando ofertas no Pelando...")
 def buscar_ofertas_pelando(busca):
 
-    driver = webdriver.Firefox(options=options)
+    driver = webdriver.Firefox(service=service, options=options)
 
     url = f"https://www.pelando.com.br/busca/{busca.replace(' ', '-')}"
     driver.get(url)
@@ -106,7 +99,7 @@ if busca:
 #######################################BLOCO TODAS AS OFERTAS#############################################################################################
 @st.cache_data(show_spinner="Buscando produtos no Buscape...")
 def buscar_buscape(busca):
-    driver = webdriver.Firefox(options=options)
+    driver = webdriver.Firefox(service=service, options=options)
 
     url_buscape = f"https://www.buscape.com.br/search?q={busca.replace(' ', '%20')}&hitsPerPage=48&page=1&sortBy=price_asc"
 
