@@ -38,7 +38,7 @@ if st.button("Buscar", key="busca"):
 @st.experimental_singleton
 def install_geckodriver():
     os.system('sbase install geckodriver')
-    os.system('ln -s /home/appuser/venv/lib/python3.7/site-packages/seleniumbase/drivers/geckodriver /home/appuser/venv/bin/geckodriver')
+    os.system('ln -s /home/appuser/venv/lib/python3.13/site-packages/seleniumbase/drivers/geckodriver /home/appuser/venv/bin/geckodriver')
 
 install_geckodriver()
 
