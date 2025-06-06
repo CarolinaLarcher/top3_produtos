@@ -24,6 +24,10 @@ with st.echo():
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.support import expected_conditions as EC
 
+    options = Options()
+    options.add_argument("--disable-gpu")
+    options.add_argument("--headless")
+    
     @st.cache_resource
     def get_driver():
         return webdriver.Chrome(
@@ -32,10 +36,6 @@ with st.echo():
             ),
             options=options,
         )
-
-    options = Options()
-    options.add_argument("--disable-gpu")
-    options.add_argument("--headless")
 
     driver = get_driver()
 
