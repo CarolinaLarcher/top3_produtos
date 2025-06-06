@@ -13,34 +13,33 @@ import google.generativeai as genai
 from fpdf import FPDF
 from googleapiclient.discovery import build
 import streamlit as st
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.core.os_manager import ChromeType
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
-with st.echo():
-    from selenium import webdriver
-    from selenium.webdriver.chrome.options import Options
-    from selenium.webdriver.chrome.service import Service
-    from webdriver_manager.chrome import ChromeDriverManager
-    from webdriver_manager.core.os_manager import ChromeType
-    from selenium.webdriver.common.by import By
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
+options = Options()
+options.add_argument("--headless=new")  # Novo modo de headless (mais estável)
+options.add_argument("--disable-gpu")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--single-process")
+options.add_argument("--window-size=1920,1080")  # Ajuda o rendering
 
-    options = Options()
-    options.add_argument("--headless=new")  # Novo modo de headless (mais estável)
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--single-process")
-    options.add_argument("--window-size=1920,1080")  # Ajuda o rendering
-    
-    def get_driver():
-        return webdriver.Chrome(
-            service=Service(
-                ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
-            ),
-            options=options,
-        )
+@st.cache_resource
+def get_driver():
+    return webdriver.Chrome(
+        service=Service(
+            ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
+        ),
+        options=options,
+    )
 
-    driver = get_driver()
+driver = get_driver()
 
 # Campo de busca (input de texto)
 busca = st.text_input("Está buscando qual produto?")
@@ -55,6 +54,7 @@ if st.button("Buscar", key="busca"):
         st.warning("Por favor, digite algo para buscar.")
 
 #############################BLOCO PELANDO#################################################################################
+@st.cache_data(show_spinner="Buscando ofertas no Pelando...")
 def buscar_ofertas_pelando(busca):
 
     driver = get_driver()
@@ -97,11 +97,15 @@ def buscar_ofertas_pelando(busca):
     driver.quit()
     return titulos, precos, links, status_list
 
+# Só faz a busca uma vez e guarda o resultado em session_state
 if busca:
-    titulos, precos, links, status_list = buscar_ofertas_pelando(busca)
+    if "pelando_resultado" not in st.session_state or st.session_state.get("ultima_busca") != busca:
+        st.session_state["pelando_resultado"] = buscar_ofertas_pelando(busca)
+        st.session_state["ultima_busca"] = busca
 
-    # Checkbox para decidir se quer buscar ofertas relacionadas
+    # Botão para exibir os resultados salvos
     if st.button("Mostrar ofertas no Pelando", key="busca_pelando"):
+        titulos, precos, links, status_list = st.session_state["pelando_resultado"]
 
         # Exibir resultados no Streamlit
         for i in range(len(titulos)):
@@ -112,6 +116,7 @@ if busca:
                 st.write(f"[Link da oferta]({links[i]})")
 
 #######################################BLOCO TODAS AS OFERTAS#############################################################################################
+@st.cache_data(show_spinner="Buscando ofertas no Buscapé...")
 def buscar_buscape(busca):
     driver = get_driver()
 
@@ -160,6 +165,7 @@ def buscar_buscape(busca):
     driver.quit()
     return titulos, precos, links, lojas
 
+@st.cache_data
 def gerar_descricoes_formatadas(titulos):
     descricoes = []
     # Configurar a chave de API
@@ -275,11 +281,20 @@ def gerar_top3(descricoes_formatadas, precos):
     numeros_escolhidos = re.findall(r"^\s*(\d+)\.", response.text, flags=re.MULTILINE)
     return [int(n) for n in numeros_escolhidos]
 
+@st.cache_data(show_spinner="Gerando top 3 com base na análise...", ttl=3600)
+def gerar_top3_com_cache(descricoes_formatadas, precos):
+    return gerar_top3(descricoes_formatadas, precos)
 
 if busca:
     descricoes_formatadas = st.session_state.get('descricoes_formatadas', [])
     descricoes = [item[0] for item in descricoes_formatadas]  # pega só as descrições (string)
     precos = [item[1] for item in descricoes_formatadas]     # pega só os preços (string)
+
+    # Botão para forçar atualização do Top 3
+    atualizar_top3 = st.button("Atualizar Top 3", key="atualizar_top3")
+
+    if atualizar_top3:
+        st.cache_data.clear()  # Limpa o cache da sessão
 
     # Chama a função com cache
     numeros_escolhidos = gerar_top3(descricoes, precos)
@@ -312,7 +327,7 @@ if busca:
 API_KEY = 'AIzaSyDEjr0HgI8JIloqiGT5qivkSxjb0mzP5Pk'
 CSE_ID = '3334b657e04a245e8'
 
-
+@st.cache_data
 def buscar_imagem_google(query):
     service = build("customsearch", "v1", developerKey=API_KEY)
     res = service.cse().list(q=query, cx=CSE_ID, searchType='image', num=1).execute()
@@ -321,6 +336,7 @@ def buscar_imagem_google(query):
     else:
         return None
 
+@st.cache_data(show_spinner="Gerando PDF...")
 def gerar_pdf_item_escolhido(titulo, descricao, preco, emitido_em, numero_orcamento, valido_por, nome_contato, endereco):
 
     pdf = FPDF()
