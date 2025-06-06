@@ -28,7 +28,6 @@ with st.echo():
     options.add_argument("--disable-gpu")
     options.add_argument("--headless")
     
-    @st.cache_resource
     def get_driver():
         return webdriver.Chrome(
             service=Service(
@@ -52,7 +51,6 @@ if st.button("Buscar", key="busca"):
         st.warning("Por favor, digite algo para buscar.")
 
 #############################BLOCO PELANDO#################################################################################
-@st.cache_resource(show_spinner="Buscando ofertas no Pelando...")
 def buscar_ofertas_pelando(busca):
 
     driver = get_driver()
@@ -110,7 +108,6 @@ if busca:
                 st.write(f"[Link da oferta]({links[i]})")
 
 #######################################BLOCO TODAS AS OFERTAS#############################################################################################
-@st.cache_resource(show_spinner="Buscando produtos no Buscape...")
 def buscar_buscape(busca):
     driver = get_driver()
 
@@ -159,7 +156,6 @@ def buscar_buscape(busca):
     driver.quit()
     return titulos, precos, links, lojas
 
-@st.cache_resource(show_spinner="Gerando descrições dos produtos...")
 def gerar_descricoes_formatadas(titulos):
     descricoes = []
     # Configurar a chave de API
@@ -247,7 +243,6 @@ if busca:
 
 #######################################BLOCO TOP 3 OFERTAS#############################################################################################
 
-@st.cache_resource(show_spinner="Selecionando os melhores produtos...")
 def gerar_top3(descricoes_formatadas, precos):
     # Configurar a chave de API
     genai.configure(api_key="AIzaSyBqSIvFig8B5-2_WjRCVpNQ1twI3KeoRB4")
@@ -313,7 +308,7 @@ if busca:
 API_KEY = 'AIzaSyDEjr0HgI8JIloqiGT5qivkSxjb0mzP5Pk'
 CSE_ID = '3334b657e04a245e8'
 
-@st.cache_resource(show_spinner="Buscando imagem...")
+
 def buscar_imagem_google(query):
     service = build("customsearch", "v1", developerKey=API_KEY)
     res = service.cse().list(q=query, cx=CSE_ID, searchType='image', num=1).execute()
