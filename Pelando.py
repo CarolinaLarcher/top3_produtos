@@ -1,10 +1,3 @@
-from webdriver_manager.firefox import GeckoDriverManager
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.firefox.service import Service
 import time
 import traceback
 import pandas as pd
@@ -21,6 +14,31 @@ from fpdf import FPDF
 from googleapiclient.discovery import build
 import streamlit as st
 
+with st.echo():
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.chrome.service import Service
+    from webdriver_manager.chrome import ChromeDriverManager
+    from webdriver_manager.core.os_manager import ChromeType
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+
+    @st.cache_resource
+    def get_driver():
+        return webdriver.Chrome(
+            service=Service(
+                ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
+            ),
+            options=options,
+        )
+
+    options = Options()
+    options.add_argument("--disable-gpu")
+    options.add_argument("--headless")
+
+    driver = get_driver()
+
 # Campo de busca (input de texto)
 busca = st.text_input("Está buscando qual produto?")
 if isinstance(busca, tuple):
@@ -33,25 +51,11 @@ if st.button("Buscar", key="busca"):
     else:
         st.warning("Por favor, digite algo para buscar.")
 
-if sys.platform.startswith('win'):
-    driver_path = "./drivers/geckodriver.exe"
-else:
-    driver_path = "./drivers/geckodriver"
-
-os.chmod(driver_path, 0o755)  # cuidado no Windows, pode dar erro
-
-os.chmod(driver_path, 0o755)
-
-options = Options()
-options.headless = True
-
-service = Service(executable_path=driver_path)
-
 #############################BLOCO PELANDO#################################################################################
-@st.cache_data(show_spinner="Buscando ofertas no Pelando...")
+@st.cache_resource(show_spinner="Buscando ofertas no Pelando...")
 def buscar_ofertas_pelando(busca):
 
-    driver = webdriver.Firefox(service=service, options=options)
+    driver = get_driver()
 
     url = f"https://www.pelando.com.br/busca/{busca.replace(' ', '-')}"
     driver.get(url)
@@ -106,9 +110,9 @@ if busca:
                 st.write(f"[Link da oferta]({links[i]})")
 
 #######################################BLOCO TODAS AS OFERTAS#############################################################################################
-@st.cache_data(show_spinner="Buscando produtos no Buscape...")
+@st.cache_resource(show_spinner="Buscando produtos no Buscape...")
 def buscar_buscape(busca):
-    driver = webdriver.Firefox(service=service, options=options)
+    driver = get_driver()
 
     url_buscape = f"https://www.buscape.com.br/search?q={busca.replace(' ', '%20')}&hitsPerPage=48&page=1&sortBy=price_asc"
 
@@ -155,7 +159,7 @@ def buscar_buscape(busca):
     driver.quit()
     return titulos, precos, links, lojas
 
-@st.cache_data(show_spinner="Gerando descrições dos produtos...")
+@st.cache_resource(show_spinner="Gerando descrições dos produtos...")
 def gerar_descricoes_formatadas(titulos):
     descricoes = []
     # Configurar a chave de API
@@ -243,7 +247,7 @@ if busca:
 
 #######################################BLOCO TOP 3 OFERTAS#############################################################################################
 
-@st.cache_data(show_spinner="Selecionando os melhores produtos...")
+@st.cache_resource(show_spinner="Selecionando os melhores produtos...")
 def gerar_top3(descricoes_formatadas, precos):
     # Configurar a chave de API
     genai.configure(api_key="AIzaSyBqSIvFig8B5-2_WjRCVpNQ1twI3KeoRB4")
@@ -309,7 +313,7 @@ if busca:
 API_KEY = 'AIzaSyDEjr0HgI8JIloqiGT5qivkSxjb0mzP5Pk'
 CSE_ID = '3334b657e04a245e8'
 
-@st.cache_data(show_spinner="Buscando imagem...")
+@st.cache_resource(show_spinner="Buscando imagem...")
 def buscar_imagem_google(query):
     service = build("customsearch", "v1", developerKey=API_KEY)
     res = service.cse().list(q=query, cx=CSE_ID, searchType='image', num=1).execute()
