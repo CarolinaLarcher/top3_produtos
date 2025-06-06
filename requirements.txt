@@ -8,4 +8,5 @@ google-api-python-client
 fpdf
 google-generativeai
 streamlit
+protobuf==3.20.3
 
