@@ -11,6 +11,7 @@ import pandas as pd
 import re
 import requests
 import os
+import sys
 import tempfile
 from datetime import datetime
 from PIL import Image
@@ -32,7 +33,13 @@ if st.button("Buscar", key="busca"):
     else:
         st.warning("Por favor, digite algo para buscar.")
 
-driver_path = "./drivers/geckodriver"
+if sys.platform.startswith('win'):
+    driver_path = "./drivers/geckodriver.exe"
+else:
+    driver_path = "./drivers/geckodriver"
+
+os.chmod(driver_path, 0o755)  # cuidado no Windows, pode dar erro
+
 os.chmod(driver_path, 0o755)
 
 options = Options()
